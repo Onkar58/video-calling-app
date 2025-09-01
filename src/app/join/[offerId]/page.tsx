@@ -1,5 +1,5 @@
 "use client";
-import { use, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { BiUser } from "react-icons/bi";
 import {
   FaMicrophone,
@@ -15,9 +15,9 @@ export default function JoinCallPage({
   params: Promise<{ offerId: string }>;
 }) {
   const { offerId } = use(params);
-  const [username, setUsername] = useState("komal");
-  const [error, setError] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
+  const [username] = useState("komal");
+  const [, setError] = useState<string | null>(null);
+  const [, setConnected] = useState(false);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -25,7 +25,7 @@ export default function JoinCallPage({
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
 
-  async function handleJoinCall() {
+  const handleJoinCall = useCallback(async () => {
     setError(null);
 
     if (!username.trim()) {
@@ -68,6 +68,7 @@ export default function JoinCallPage({
       // Listen for remote tracks
       peer.ontrack = (event) => {
         if (remoteVideoRef.current) {
+          console.log(event.streams);
           const [stream] = event.streams;
           remoteVideoRef.current.srcObject = stream;
         }
@@ -106,11 +107,12 @@ export default function JoinCallPage({
         }),
       });
     } catch (err) {
+      console.log(err);
       setError(
         "Failed to join call. Please check the offer code and try again."
       );
     }
-  }
+  }, []);
   const toggleVideo = () => {
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -121,20 +123,20 @@ export default function JoinCallPage({
     }
   };
 
-  const endCall = () => {
-    // Stop all media tracks
-    // const stream = localStreamRef.current;
-    // if (!stream) return;
-    // const tracks = stream.getTracks();
-    // tracks.forEach((track) => track.stop());
-    // if (localStreamRef && localStreamRef.current) {
-    //   //@ts-ignore
-    //   localVideoRef.current.srcObject = null;
-    // }
-    // setIsAudioOn(false);
-    // setIsVideoOn(false);
-    // alert("Call Ended");
-  };
+  // const endCall = () => {
+  // Stop all media tracks
+  // const stream = localStreamRef.current;
+  // if (!stream) return;
+  // const tracks = stream.getTracks();
+  // tracks.forEach((track) => track.stop());
+  // if (localStreamRef && localStreamRef.current) {
+  //   //@ts-ignore
+  //   localVideoRef.current.srcObject = null;
+  // }
+  // setIsAudioOn(false);
+  // setIsVideoOn(false);
+  // alert("Call Ended");
+  // };
   const toggleAudio = () => {
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -146,7 +148,7 @@ export default function JoinCallPage({
   };
   useEffect(() => {
     handleJoinCall();
-  }, []);
+  }, [handleJoinCall]);
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
       {/* Remote Video Fullscreen */}

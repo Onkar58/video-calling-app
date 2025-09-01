@@ -1,6 +1,6 @@
 "use client";
 import { Loader } from "@/components/Loading";
-import { use, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { BiUser } from "react-icons/bi";
 import { BsInfoCircle } from "react-icons/bs";
 import {
@@ -20,9 +20,9 @@ export default function CallPage({
 }) {
   const { offerId } = use(params);
 
-  const [username, setUsername] = useState("onkar");
-  const [sdp, setSdp] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [username] = useState("onkar");
+  const [, setSdp] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [showOffer, setShowOffer] = useState(true);
   const peerRef = useRef<RTCPeerConnection | null>(null);
@@ -33,7 +33,7 @@ export default function CallPage({
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [currentDomain, setCurrentDomain] = useState("");
 
-  async function handleCreateCall() {
+  const handleCreateCall = useCallback(async () => {
     setError(null);
 
     if (!username.trim()) {
@@ -107,9 +107,9 @@ export default function CallPage({
       console.log({ err });
       setError("Failed to create call. Please try again.");
     }
-  }
+  }, []);
 
-  async function handleGetAnswerAndConnect() {
+  const handleGetAnswerAndConnect = useCallback(async () => {
     setError(null);
     if (!offerId) return;
     try {
@@ -128,9 +128,10 @@ export default function CallPage({
       await peer.setRemoteDescription(new RTCSessionDescription(answerDesc));
       setConnected(true);
     } catch (err) {
+      console.log({ err });
       setError("Failed to set answer. Try again.");
     }
-  }
+  }, [offerId]);
 
   const toggleVideo = () => {
     const stream = localStreamRef.current;
@@ -150,29 +151,28 @@ export default function CallPage({
       setIsAudioOn(audioTrack.enabled);
     }
   };
-  const endCall = () => {
-    // Stop all media tracks
-    // const stream = localStreamRef.current;
-    // if (!stream) return;
-    // const tracks = stream.getTracks();
-    // tracks.forEach((track) => track.stop());
-    // if (localStreamRef.current) {
-    //   //@ts-ignore
-    //   localVideoRef.current.srcObject = null;
-    // }
-    // setIsAudioOn(false);
-    // setIsVideoOn(false);
-    // alert("Call Ended");
-  };
+  // const endCall = () => {
+  // Stop all media tracks
+  // const stream = localStreamRef.current;
+  // if (!stream) return;
+  // const tracks = stream.getTracks();
+  // tracks.forEach((track) => track.stop());
+  // if (localStreamRef.current) {
+  //   //@ts-ignore
+  //   localVideoRef.current.srcObject = null;
+  // }
+  // setIsAudioOn(false);
+  // setIsVideoOn(false);
+  // alert("Call Ended");
+  // };
   useEffect(() => {
     handleCreateCall();
-  }, []);
+  }, [handleCreateCall]);
 
   useEffect(() => {
     if (!offerId || connected) return;
 
     let attempts = 0;
-    let intervalId: any;
 
     const poll = async () => {
       attempts++;
@@ -186,7 +186,7 @@ export default function CallPage({
       }
     };
 
-    intervalId = setInterval(
+    const intervalId = setInterval(
       poll,
       attempts < 10 ? 2000 : 10000 // 2s for first 10 attempts, then 10s
     );

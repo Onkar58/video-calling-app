@@ -1,7 +1,7 @@
 "use client";
 import { generateMeetingCode } from "@/server/generateMeetingCode";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaUser, FaVideo } from "react-icons/fa";
 import {
   MdOutlineArrowBackIos,
