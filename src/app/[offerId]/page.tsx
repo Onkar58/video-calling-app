@@ -1,13 +1,17 @@
 "use client";
+import { Loader } from "@/components/Loading";
 import { use, useEffect, useRef, useState } from "react";
 import { BiUser } from "react-icons/bi";
+import { BsInfoCircle } from "react-icons/bs";
 import {
   FaMicrophone,
   FaMicrophoneSlash,
   FaVideo,
   FaVideoSlash,
 } from "react-icons/fa";
+import { FaRegCopy, FaX } from "react-icons/fa6";
 import { ImPhoneHangUp } from "react-icons/im";
+import { toast } from "sonner";
 
 export default function CallPage({
   params,
@@ -18,7 +22,6 @@ export default function CallPage({
 
   const [username, setUsername] = useState("onkar");
   const [sdp, setSdp] = useState<string | null>(null);
-  // const [offerId, setOfferId] = useState<string | null>("hellooo");
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [showOffer, setShowOffer] = useState(true);
@@ -28,9 +31,9 @@ export default function CallPage({
   const localStreamRef = useRef<MediaStream | null>(null);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
+  const [currentDomain, setCurrentDomain] = useState("");
 
   async function handleCreateCall() {
-    // e.preventDefault();
     setError(null);
 
     if (!username.trim()) {
@@ -39,7 +42,6 @@ export default function CallPage({
     }
 
     try {
-      // Get local camera stream
       const localStream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -96,7 +98,11 @@ export default function CallPage({
         body: JSON.stringify({ username, sdp: encoded, offerId }),
       });
       const data = await resp.json();
+
       if (!resp.ok) throw new Error(data.error || "Failed to store offer");
+      if (typeof window !== "undefined") {
+        setCurrentDomain(window.location.hostname);
+      }
     } catch (err) {
       console.log({ err });
       setError("Failed to create call. Please try again.");
@@ -187,42 +193,50 @@ export default function CallPage({
 
     return () => clearInterval(intervalId);
   }, [offerId, connected, handleGetAnswerAndConnect]);
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(currentDomain + "/join/" + offerId!);
+    toast("Link copied to clipboard");
+  };
 
   return (
     <div className="relative">
-      {showOffer && (
-        <div className="absolute bottom-6 left-6 bg-white border border-gray-200 shadow-lg rounded-xl p-4 w-72 z-[10]">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-semibold text-gray-700 text-sm">
-              Share this code with your friend:
-            </span>
-            <button
-              onClick={() => setShowOffer(false)}
-              className="text-gray-400 hover:text-gray-600 text-lg font-bold"
-            >
-              ×
-            </button>
-          </div>
+      <div
+        className={`absolute bottom-6 left-6 bg-white shadow-lg rounded-xl ${
+          showOffer ? "p-4" : "p-2 cursor-pointer"
+        } z-[10] flex flex-col items-center gap-2`}
+      >
+        {showOffer ? (
+          <>
+            <div className="flex justify-between items-center w-full gap-10">
+              <span className="font-semibold text-sm">
+                Share this code with your friend:
+              </span>
+              <button
+                onClick={() => setShowOffer(false)}
+                className="hover:text-gray-600 text-lg font-bold cursor-pointer"
+              >
+                <FaX className="scale-y-90" />
+              </button>
+            </div>
 
-          {/* Textarea */}
-          <textarea
-            className="w-full p-2 rounded-lg border border-gray-300 bg-gray-100 text-xs resize-none"
-            rows={3}
-            readOnly
-            value={offerId!}
-          />
-
-          {/* Footer with copy button */}
-          <div className="flex justify-end mt-2">
-            <button
-              onClick={() => navigator.clipboard.writeText(offerId!)}
-              className="text-sm px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-      )}
+            {/* Textarea */}
+            {currentDomain ? (
+              <div className="flex justify-between items-center mt-2 w-full px-2 py-2 bg-gray-200 rounded-sm">
+                <span className="text-sm font-semibold text-gray-800 resize-none w-full">
+                  {currentDomain + "/join/" + offerId!}
+                </span>
+                <button onClick={copyToClipboard} className="" title="Copy">
+                  <FaRegCopy className="cursor-pointer" />
+                </button>
+              </div>
+            ) : (
+              <Loader />
+            )}
+          </>
+        ) : (
+          <BsInfoCircle onClick={() => setShowOffer(true)} />
+        )}
+      </div>
       <div className="relative w-screen h-screen bg-black overflow-hidden">
         {/* Remote Video Fullscreen */}
         <video
@@ -233,7 +247,11 @@ export default function CallPage({
         />
 
         {/* Local Camera in Corner */}
-        <div className="absolute bottom-6 right-6 w-40 h-32 bg-black rounded-lg overflow-hidden shadow-lg border-2 border-white flex items-center justify-center">
+        <div
+          className={`absolute bottom-6 right-6 w-40 h-32 bg-black rounded-lg overflow-hidden shadow-lg border-2 ${
+            isAudioOn ? "border-white" : "border-gray-900"
+          } flex items-center justify-center`}
+        >
           <video
             ref={localVideoRef}
             autoPlay
@@ -249,6 +267,13 @@ export default function CallPage({
                 <BiUser size="32" color="#ddd" />
               </div>
             </div>
+          )}
+          {!isAudioOn && (
+            <FaMicrophoneSlash
+              size="20"
+              color="#ddd"
+              className="absolute z-[10] top-2 right-2"
+            />
           )}
         </div>
 

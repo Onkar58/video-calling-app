@@ -172,6 +172,13 @@ export default function JoinCallPage({
             </div>
           </div>
         )}
+        {!isAudioOn && (
+          <FaMicrophoneSlash
+            size="20"
+            color="#ddd"
+            className="absolute z-[10] top-2 right-2"
+          />
+        )}
       </div>
 
       {/* Call Controls */}
